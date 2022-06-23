@@ -9,7 +9,7 @@
             class="logo"
           />
           <div class="logo-type">
-            <h1 class="site-title">Bizmate PH</h1>
+            <h1 class="site-title">Bizmates PH</h1>
             <small class="site-description">Weather App</small>
           </div>
         </a>
