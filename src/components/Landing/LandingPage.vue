@@ -37,48 +37,63 @@
     >
       <div class="container">
         <div class="forecast-container">
-          <div class="today forecast">
-            <div class="forecast-header">
-              <div class="day">{{ currentDate?.format("dddd") }}</div>
-              <div class="date">{{ currentDate?.format("DD MMM") }}</div>
-            </div>
-            <!-- .forecast-header -->
-            <div class="forecast-content">
-              <div class="location">
-                {{
-                  place.data[0].name + " " + "(" + place.data[0].country + ")"
-                }}
-              </div>
-              <div class="degree">
-                <div class="num">
-                  {{ Math.floor(weatherToday?.main?.temp) }}<sup>o</sup>C
+          <div class="row">
+            <div class="today forecast col-lg-4 col-sm-12">
+              <div class="forecast-header">
+                <div class="day">{{ currentDate?.format("dddd") }}</div>
+                <div class="date">
+                  {{ currentDate?.format("DD MMM hh:mm A") }}
                 </div>
               </div>
-              <span
-                ><img src="images/icon-umberella.png" alt="" />{{
-                  weatherToday?.rain
-                }}%</span
-              >
-              <span
-                ><img src="images/icon-wind.png" alt="" />{{
-                  weather[0].wind.gust
-                }}km/h</span
-              >
-              <span>{{
-                weatherToday?.weather[0]?.description?.toUpperCase()
-              }}</span>
+              <!-- .forecast-header -->
+              <div class="forecast-content">
+                <div class="location">
+                  {{
+                    place.data[0].name + " " + "(" + place.data[0].country + ")"
+                  }}
+                </div>
+                <div class="degree">
+                  <div class="num">
+                    {{ Math.floor(weatherToday?.main?.temp) }}<sup>o</sup>C
+                  </div>
+                </div>
+                <span
+                  ><img src="images/icon-umberella.png" alt="" />{{
+                    weatherToday?.rain
+                  }}%</span
+                >
+                <span
+                  ><img src="images/icon-wind.png" alt="" />{{
+                    weatherToday.weather[0]?.wind?.gust
+                  }}km/h</span
+                >
+                <span>{{
+                  weatherToday?.weather[0]?.description?.toUpperCase()
+                }}</span>
+              </div>
             </div>
-          </div>
-          <div class="forecast" v-for="day in weather" :key="day.dt">
-            <div class="forecast-header">
-              <div class="day">{{ day.date }}</div>
-            </div>
-            <!-- .forecast-header -->
-            <div class="forecast-content">
-              <div>
-                <div class="forecast-icon">LIGHT RAIN</div>
-                <div class="degree">23<sup>o</sup>C</div>
-                <small>18<sup>o</sup></small>
+
+            <div
+              class="forecast col-lg-2 col-md-3 col-12"
+              v-for="day in weather"
+              :key="day.dt"
+            >
+              <div class="forecast-header">
+                <div class="day">{{ day.date.format("DD MMM") }}</div>
+              </div>
+              <!-- .forecast-header -->
+              <div class="forecast-content">
+                <div>
+                  <div class="forecast-icon">
+                    <b> {{ day.date.format("hh:mm A") }} </b>
+                  </div>
+                  <div class="degree">
+                    {{ Math.floor(day.main.temp) }}<sup>o</sup>C
+                  </div>
+                  <small>
+                    {{ day.weather.description.toUpperCase() }}
+                  </small>
+                </div>
               </div>
             </div>
           </div>
@@ -133,15 +148,13 @@ export default {
           if (res?.data?.data[0]) {
             this.getWeather(res.data.data[0].lat, res.data.data[0].lon).then(
               (response) => {
-                this.weather = response.data.data.list.filter((day, index) => {
-                  console.log(new Date(day.dt * 1000));
+                this.weather = response.data.data.list.map((day, index) => {
                   if (index !== 0) {
-                    // console.log(moment.unix(day.dt).format("dddd"));
+                    console.log(day);
                     return {
                       ...day,
-                      date: moment.unix(day.dt),
-                      rain: day.rain ? Object.values(day.rain)[0] * 100 : 0,
-                      nameOfDay: moment.unix(day.dt).format("dddd")
+                      weather: day.weather[0],
+                      date: moment.unix(day.dt)
                     };
                   } else {
                     this.weatherToday = {
@@ -149,9 +162,15 @@ export default {
                       date: moment.unix(day.dt),
                       rain: day.rain ? Object.values(day.rain)[0] * 100 : 0
                     };
-                    return;
+                    return {
+                      ...day,
+                      rain: day.rain ? Object.values(day.rain)[0] * 100 : 0,
+                      date: moment.unix(day.dt)
+                    };
                   }
                 });
+
+                this.weather.splice(0, 1);
               }
             );
           }
@@ -177,5 +196,8 @@ export default {
 }
 .loading {
   text-align: center;
+}
+.forecast-content {
+  width: 100% !important;
 }
 </style>
