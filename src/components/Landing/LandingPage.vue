@@ -57,15 +57,12 @@
                     {{ Math.floor(weatherToday?.main?.temp) }}<sup>o</sup>C
                   </div>
                 </div>
-                <span
-                  ><img src="images/icon-umberella.png" alt="" />{{
-                    weatherToday?.rain
-                  }}%</span
-                >
+
                 <span
                   ><img src="images/icon-wind.png" alt="" />{{
-                    weatherToday.weather[0]?.wind?.gust
-                  }}km/h</span
+                    weatherToday?.wind?.gust
+                  }}
+                  km/h</span
                 >
                 <span>{{
                   weatherToday?.weather[0]?.description?.toUpperCase()
@@ -99,6 +96,11 @@
           </div>
         </div>
       </div>
+      <main class="main-content">
+        <div class="fullwidth-block">
+          <div class="container"></div>
+        </div>
+      </main>
     </div>
 
     <div class="forecast-table" v-else>
@@ -150,7 +152,6 @@ export default {
               (response) => {
                 this.weather = response.data.data.list.map((day, index) => {
                   if (index !== 0) {
-                    console.log(day);
                     return {
                       ...day,
                       weather: day.weather[0],
@@ -159,12 +160,11 @@ export default {
                   } else {
                     this.weatherToday = {
                       ...day,
-                      date: moment.unix(day.dt),
-                      rain: day.rain ? Object.values(day.rain)[0] * 100 : 0
+                      date: moment.unix(day.dt)
                     };
+
                     return {
                       ...day,
-                      rain: day.rain ? Object.values(day.rain)[0] * 100 : 0,
                       date: moment.unix(day.dt)
                     };
                   }
