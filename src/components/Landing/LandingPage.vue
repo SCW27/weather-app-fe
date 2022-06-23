@@ -21,13 +21,13 @@
 
     <div class="hero" data-bg-image="images/banner.png">
       <div class="container">
-        <form class="find-location">
+        <form class="find-location" @submit="getPlace">
           <input
             type="text"
             placeholder="Find your location..."
             v-model="search"
           />
-          <input type="submit" value="Find" @click="getPlace" />
+          <input type="submit" value="Find" />
         </form>
       </div>
     </div>
@@ -98,12 +98,29 @@
       </div>
       <main class="main-content">
         <div class="fullwidth-block">
-          <div class="container"></div>
+          <div class="container">
+            <div class="row">
+              <PlaceDetails
+                :state="placeDetail?.state"
+                :city="placeDetail?.city"
+                :address="placeDetail?.formatted"
+                :population="searchDetail?.population"
+              />
+              <ForcastDetails
+                :sunset="searchDetail.sunset"
+                :sunrise="searchDetail.sunrise"
+                :tempature_min="weatherToday?.main?.temp_min"
+                :tempature_max="weatherToday?.main?.temp_max"
+              />
+            </div>
+          </div>
         </div>
       </main>
     </div>
 
-    <div class="forecast-table" v-else>
+    <div class="forecast-table" v-if="!hasError && loading">
+      {{ !hasError }}
+      {{ loading }}
       <div class="container">
         <div class="forecast-container loading">
           <img src="/images/loading.png" />
@@ -112,12 +129,28 @@
         </div>
       </div>
     </div>
+
+    <div class="forecast-table" v-if="hasError && !loading">
+      <div class="container">
+        <div class="forecast-container loading">
+          <br />
+          <h2>Unable to connect to server</h2>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { getPlaceRequest, getWeatherRequest } from "@/api/weather";
+import {
+  getPlaceRequest,
+  getWeatherRequest,
+  getPlaceDetailsRequest
+} from "@/api/weather";
+
 import moment from "moment";
+import PlaceDetails from "./components/PlaceDetails.vue";
+import ForcastDetails from "./components/ForcastDetails.vue";
 
 export default {
   name: "LandingPage",
@@ -131,7 +164,10 @@ export default {
       loading: false,
       currentDate: null,
       weather: null,
-      weatherToday: null
+      weatherToday: null,
+      hasError: false,
+      placeDetail: null,
+      searchDetail: null
     };
   },
   mounted() {
@@ -142,14 +178,28 @@ export default {
     async getWeather(lat, lon) {
       return await getWeatherRequest(lat, lon);
     },
-    getPlace() {
+    getPlace(e) {
+      if (e) {
+        console.log(e);
+        e.preventDefault();
+      }
       this.loading = true;
       getPlaceRequest(this.search)
         .then((res) => {
           this.place = res.data;
-          if (res?.data?.data[0]) {
+
+          if (res?.data?.data.length > 0 && res?.data?.data[0]) {
             this.getWeather(res.data.data[0].lat, res.data.data[0].lon).then(
               (response) => {
+                this.searchDetail = {
+                  ...response.data.data.city,
+                  sunset: moment
+                    .unix(response.data.data.city.sunset)
+                    .format("hh:mm:ss A"),
+                  sunrise: moment
+                    .unix(response.data.data.city.sunrise)
+                    .format("hh:mm:ss A")
+                };
                 this.weather = response.data.data.list.map((day, index) => {
                   if (index !== 0) {
                     return {
@@ -162,26 +212,51 @@ export default {
                       ...day,
                       date: moment.unix(day.dt)
                     };
-
                     return {
                       ...day,
                       date: moment.unix(day.dt)
                     };
                   }
                 });
-
                 this.weather.splice(0, 1);
+                this.hasError = false;
               }
             );
+            getPlaceDetailsRequest(
+              res.data.data[0].lat,
+              res.data.data[0].lon
+            ).then((details) => {
+              if (
+                details &&
+                details.data &&
+                details.data.data.results &&
+                details.data.data.results.length > 0
+              ) {
+                this.placeDetail = details.data.data.results[0];
+              }
+            });
+            this.loading = false;
+          } else if (res.data.data.cod === "400") {
+            this.hasError = true;
+            this.loading = true;
+            this.$swal({
+              title: "Unable to locate place, please try again",
+              icon: "error"
+            });
           }
-          this.loading = false;
         })
         .catch((e) => {
           console.log(e);
+          this.$swal({
+            title: "Unable to connect to server",
+            icon: "error"
+          });
           this.loading = false;
+          this.hasError = true;
         });
     }
-  }
+  },
+  components: { PlaceDetails, ForcastDetails }
 };
 </script>
 
